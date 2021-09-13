@@ -66,19 +66,20 @@ int RandomInteger(int low, int high);
 double heuristica(Tinstance I, int tipo, double *x);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 
+/* carrega o modelo de PLI nas estruturas do GLPK */
 int carga_lp(glp_prob **lp, Tinstance I)
 {
   int *ia, *ja, nrows, ncols, i, k, row, col, nz;
   double *ar;
   char name[80]; // nome da restricao
 
-  nrows = I.k + I.n;
+  nrows = I.k + I.n; // 1 restricao de capacidade para cada mochila + 1 para cada item
   ncols = I.n * I.k;
 
   // Aloca matriz de coeficientes
   ia = (int *)malloc(sizeof(int) * (I.n * I.k * 2 + 1));
   ja = (int *)malloc(sizeof(int) * (I.n * I.k * 2 + 1));
-  ar = (double *)malloc(sizeof(double) * (I.n * I.k * 2+ 1));
+  ar = (double *)malloc(sizeof(double) * (I.n * I.k * 2 + 1));
 
   // Cria problema de PL
   *lp = glp_create_prob();
@@ -132,9 +133,9 @@ int carga_lp(glp_prob **lp, Tinstance I)
     for (i = 1; i <= I.n; i++) //para cada item
     {
       // restr de capacidade
-      ia[nz] = k;
-      ja[nz] = (k - 1) * I.n + i;
-      ar[nz] = I.item[i - 1].peso;
+      ia[nz] = k;                  // linha (indice da restricao)
+      ja[nz] = (k - 1) * I.n + i;  // coluna (indice da variavel = xik)
+      ar[nz] = I.item[i - 1].peso; // coeficiente da matriz de coeficientes na linha e coluna
       nz++;
     }
   }
@@ -162,6 +163,7 @@ int carga_lp(glp_prob **lp, Tinstance I)
   return 1;
 }
 
+/* carrega os dados da instancia de entrada */
 int carga_instancia(char *filename, Tinstance *I)
 {
   FILE *fin;
@@ -214,11 +216,15 @@ int carga_instancia(char *filename, Tinstance *I)
   fclose(fin);
   return 1;
 }
+
+/* libera memoria alocada pelo programa para guardar a instancia */
 void free_instancia(Tinstance I)
 {
   free(I.item);
   free(I.C);
 }
+
+/* sorteia um numero aleatorio entre [low,high] */
 int RandomInteger(int low, int high)
 {
   int k;
@@ -229,6 +235,7 @@ int RandomInteger(int low, int high)
   return low + k;
 }
 
+/* resolve o problema de PLI usando o GLPK */
 double otimiza_PLI(Tinstance I, int tipo, double *x)
 {
   glp_prob *lp;
@@ -250,7 +257,7 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   // configura optimizer
   glp_init_iocp(&param_ilp);
   param_ilp.msg_lev = GLP_MSG_ALL;
-  param_ilp.tm_lim = 1000;
+  param_ilp.tm_lim = 1000; // tempo limite do solver de PLI
   param_ilp.out_frq = 100;
 
   // Executa Solver de PL
@@ -299,6 +306,15 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   return z;
 }
 
+/* heuristica a ser implementada */
+double heuristica(Tinstance I, int tipo, double *x)
+{
+  double z = 0.0;
+  // TODO...
+  return z;
+}
+
+/* programa principal */
 int main(int argc, char **argv)
 {
   double z, *x;
@@ -321,9 +337,9 @@ int main(int argc, char **argv)
   }
 
   tipo = atoi(argv[2]);
-  if (tipo < 1 || tipo > 2)
+  if (tipo < 1 || tipo > 3)
   {
-    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira)\n");
+    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica)\n");
     exit(1);
   }
 
@@ -331,7 +347,16 @@ int main(int argc, char **argv)
   x = (double *)malloc(sizeof(double) * (I.n * I.k));
 
   antes = clock();
-  z = otimiza_PLI(I, tipo, x);
+  if (tipo < 3)
+  {
+    z = otimiza_PLI(I, tipo, x);
+  }
+  else
+  {
+    // heuristica
+    // TODO
+    z = heuristica(I, tipo, x);
+  }
   agora = clock();
 
   PRINTF("Valor da solucao: %lf\tTempo gasto=%lf\n", z, ((double)agora - antes) / CLOCKS_PER_SEC);
