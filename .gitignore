@@ -51,6 +51,6 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-grupo/mochila_multipla-DEBUG
+grupo5/mochila_multipla-DEBUG
 *.lp
 *.sol
