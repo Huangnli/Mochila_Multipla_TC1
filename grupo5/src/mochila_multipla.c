@@ -49,6 +49,7 @@ typedef struct
   int num;      /* numero do item */
   double valor; /* valor do item */
   int peso;     /* peso do item */
+  float razao; /* razao entre valor e peso */
 } Titem;
 
 typedef struct
@@ -63,6 +64,8 @@ int carga_lp(glp_prob **lp, Tinstance I);
 int carga_instancia(char *filename, Tinstance *I);
 void free_instancia(Tinstance I);
 int RandomInteger(int low, int high);
+float comparador(const void *valor1, const void *valor2);
+double guloso(Tinstance I, double *x);
 double heuristica(Tinstance I, int tipo, double *x);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 
@@ -306,11 +309,74 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   return z;
 }
 
+float comparador(const void *valor1, const void *valor2)
+{
+  float x = (*(Titem *)valor1).razao;
+  float y = (*(Titem *)valor2).razao;
+
+  return (x - y);
+    
+  /*if (*(double *)valor1 > *(double *)valor2)
+  {
+    return 1;
+  }
+  else if (*(double *)valor1 == *(double *)valor2)
+  {
+    return 0;
+  }
+  else if (*(double *)valor1 < *(double *)valor2)
+  {
+    return -1;
+  }*/
+}
+
 /* heuristica a ser implementada */
+
+//primeira heuristica implementada pelo grupo
+
+double guloso(Tinstance I, double *x)
+{
+  double z = 0.0; // melhor resposta;
+  int i = 0;
+  //float razao_arr[I.n]; // armazena a razao de todos os itens
+
+  for (; i < I.n; i++)
+  {
+    I.item[i].razao = I.item[i].valor / I.item[i].peso;
+    //razao_arr[i] = I.item[i].valor / I.item[i].peso;
+  }
+
+  qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
+
+  return z;
+}
+//segunda heuristica implementada pelo grupo
+double random_heuristica(Tinstance I, double *x)
+{
+  double z = 0.0; // melhor resposta
+  /*sera sorteado um valor chamdado numSort, que eh um inteiro entre metade do numero de mochilas, e o numero total de mochilas(numMoch / 2, numMoch)
+  esse numero sera o quantidade de sorteios feitos entre os itens
+  */
+  int numSort = RandomInteger(I.n , I.n / 2); // numero de sorteios
+  int i = 0;
+  for(; i < numSort; i++) 
+  {
+    
+  }
+  return z;
+}
+
 double heuristica(Tinstance I, int tipo, double *x)
 {
   double z = 0.0;
   // TODO...
+  if (tipo == 3)
+  {
+    z = guloso(I, x);
+  }
+  else {
+    z = random_heuristica(I, x);
+  }
   return z;
 }
 
@@ -337,12 +403,12 @@ int main(int argc, char **argv)
   }
 
   tipo = atoi(argv[2]);
-  if (tipo < 1 || tipo > 3)
+  if (tipo < 1 || tipo > 4)
   {
-    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica)\n");
+    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria)\n");
     exit(1);
   }
-
+  
   // aloca memoria para a solucao
   x = (double *)malloc(sizeof(double) * (I.n * I.k));
 
