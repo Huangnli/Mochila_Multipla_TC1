@@ -64,7 +64,7 @@ int carga_lp(glp_prob **lp, Tinstance I);
 int carga_instancia(char *filename, Tinstance *I);
 void free_instancia(Tinstance I);
 int RandomInteger(int low, int high);
-float comparador(const void *valor1, const void *valor2);
+int comparador(const void *valor1, const void *valor2);
 double guloso(Tinstance I, double *x);
 double heuristica(Tinstance I, int tipo, double *x);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
@@ -309,7 +309,7 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   return z;
 }
 
-float comparador(const void *valor1, const void *valor2)
+int comparador(const void *valor1, const void *valor2)
 {
   float x = (*(Titem *)valor1).razao;
   float y = (*(Titem *)valor2).razao;
