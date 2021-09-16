@@ -49,7 +49,8 @@ typedef struct
   int num;      /* numero do item */
   double valor; /* valor do item */
   int peso;     /* peso do item */
-  float razao; /* razao entre valor e peso */
+  float razao;  /* razao entre valor e peso */
+  int index;    /* mochila ao qual o item pertence */
 } Titem;
 
 typedef struct
@@ -65,8 +66,8 @@ int carga_instancia(char *filename, Tinstance *I);
 void free_instancia(Tinstance I);
 int RandomInteger(int low, int high);
 int comparador(const void *valor1, const void *valor2);
-double guloso(Tinstance I, double *x);
-double heuristica(Tinstance I, int tipo, double *x);
+double guloso(Tinstance I);
+double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
@@ -311,71 +312,104 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
 
 int comparador(const void *valor1, const void *valor2)
 {
-  float x = (*(Titem *)valor1).razao;
-  float y = (*(Titem *)valor2).razao;
-
-  return (x - y);
-    
-  /*if (*(double *)valor1 > *(double *)valor2)
+  if ((*(Titem *)valor1).valor > (*(Titem *)valor2).valor)
   {
-    return 1;
+    return -1;
   }
-  else if (*(double *)valor1 == *(double *)valor2)
+  else if ((*(Titem *)valor1).valor == (*(Titem *)valor2).valor)
   {
     return 0;
   }
-  else if (*(double *)valor1 < *(double *)valor2)
+  else
   {
-    return -1;
-  }*/
+    return 1;
+  }
 }
 
-/* heuristica a ser implementada */
-
 //primeira heuristica implementada pelo grupo
-
-double guloso(Tinstance I, double *x)
+double guloso(Tinstance I)
 {
   double z = 0.0; // melhor resposta;
-  int i = 0;
-  //float razao_arr[I.n]; // armazena a razao de todos os itens
+  int j = 0;      // indice da mochila
 
-  for (; i < I.n; i++)
+  /*
+  for (int i = 0; i < I.n; i++)
   {
     I.item[i].razao = I.item[i].valor / I.item[i].peso;
-    //razao_arr[i] = I.item[i].valor / I.item[i].peso;
   }
+  */
 
   qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
 
+  for (int i = 0; i < I.n; i++)
+    I.item[i].index = 0;
+
+  while (j < I.k)
+  {
+    for (int i = 0; i < I.n; i++)
+    {
+      if (I.item[i].index == 0)
+      {
+        if (I.item[i].peso < I.C[j])
+        {
+          I.item[i].index = j;
+          I.C[j] -= I.item[i].peso;
+          z += I.item[i].valor;
+        }
+        else
+          j++;
+      }
+    }
+  }
+
   return z;
 }
+
 //segunda heuristica implementada pelo grupo
-double random_heuristica(Tinstance I, double *x)
+double random_heuristica(Tinstance I)
 {
   double z = 0.0; // melhor resposta
-  /*sera sorteado um valor chamdado numSort, que eh um inteiro entre metade do numero de mochilas, e o numero total de mochilas(numMoch / 2, numMoch)
-  esse numero sera o quantidade de sorteios feitos entre os itens
-  */
-  int numSort = RandomInteger(I.n , I.n / 2); // numero de sorteios
   int i = 0;
-  for(; i < numSort; i++) 
+  int sum_peso;
+
+  int indice_mochila = 1; // qual mochila esta sendo usado
+
+  for (int i = 0; i < I.n; i++)
+    I.item[i].index = 0;
+
+  for (; indice_mochila < I.k; indice_mochila++)
   {
-    
+    sum_peso = 0;
+    while (sum_peso < I.C[indice_mochila])
+    {
+      i = RandomInteger(1, I.n); // item que sera pego
+      // while (I.item[i].index != 0) // ate pegar um item que nao esteja sendo usado, ele continua sorteando
+      // {
+      //   i = RandomInteger(1 , I.n);
+      // }
+      if (I.item[i].index == 0)
+      {
+        I.item[i].index = indice_mochila; // marca o valor como ja utilizado em qual mochila
+        sum_peso += I.item[i].peso;
+        z += I.item[i].valor; // soma o valor sorteado a soma total
+      }
+    }
   }
   return z;
 }
 
-double heuristica(Tinstance I, int tipo, double *x)
+/* heuristica a ser implementada */
+double heuristica(Tinstance I, int tipo)
 {
   double z = 0.0;
   // TODO...
   if (tipo == 3)
   {
-    z = guloso(I, x);
+    z = guloso(I);
   }
-  else {
-    z = random_heuristica(I, x);
+  else
+  {
+    z = random_heuristica(I);
   }
   return z;
 }
@@ -408,20 +442,19 @@ int main(int argc, char **argv)
     printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria)\n");
     exit(1);
   }
-  
-  // aloca memoria para a solucao
-  x = (double *)malloc(sizeof(double) * (I.n * I.k));
 
   antes = clock();
   if (tipo < 3)
   {
+    // aloca memoria para a solucao
+    x = (double *)malloc(sizeof(double) * (I.n * I.k));
     z = otimiza_PLI(I, tipo, x);
+    free(x);
   }
   else
   {
     // heuristica
-    // TODO
-    z = heuristica(I, tipo, x);
+    z = heuristica(I, tipo);
   }
   agora = clock();
 
@@ -430,7 +463,7 @@ int main(int argc, char **argv)
   printf("%s;%d;%d;%d;%.0lf;%lf\n", argv[1], tipo, I.n, I.k, z, ((double)agora - antes) / CLOCKS_PER_SEC);
   // libera memoria alocada
   free_instancia(I);
-  free(x);
+  //free(x);
   return 0;
 }
 
