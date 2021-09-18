@@ -35,6 +35,7 @@ variaveis: xij binarias = 1 se o item i eh transportado na mochila j
 #include <stdlib.h>
 #include <glpk.h>
 #include <time.h>
+#include <string.h>
 
 #define EPSILON 0.000001
 
@@ -69,6 +70,7 @@ int comparador(const void *valor1, const void *valor2);
 double guloso(Tinstance I);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
+void gerar_arquivo(char *filename, double z, Tinstance I);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
 int carga_lp(glp_prob **lp, Tinstance I)
@@ -341,14 +343,15 @@ double guloso(Tinstance I)
 
   qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
 
-  for (int i = 0; i < I.n; i++)
-    I.item[i].index = 0;
+  // inicializa os index do item com valor zero
+  for (int i = 0; i <= I.n; i++)
+    I.item[i].index = -1;
 
   while (j < I.k)
   {
     for (int i = 0; i < I.n; i++)
     {
-      if (I.item[i].index == 0)
+      if (I.item[i].index == -1)
       {
         if (I.item[i].peso < I.C[j])
         {
@@ -357,7 +360,17 @@ double guloso(Tinstance I)
           z += I.item[i].valor;
         }
         else
-          j++;
+        {
+          if (j >= I.k)
+          {
+            i = I.n;
+          }
+          else
+          {
+            j++;
+            i--;
+          }
+        }
       }
     }
   }
@@ -370,31 +383,63 @@ double random_heuristica(Tinstance I)
 {
   double z = 0.0; // melhor resposta
   int i = 0;
-  int sum_peso;
+  int j = 0;
+  // int sum_peso;
+  // int indice_mochila = 0; // qual mochila esta sendo usado
 
-  int indice_mochila = 1; // qual mochila esta sendo usado
+  for (int i = 0; i < I.n; i++) // inicializar o index com -1 (item não levado)
+    I.item[i].index = -1;
 
-  for (int i = 0; i < I.n; i++)
-    I.item[i].index = 0;
+  srand(time(NULL));
 
-  for (; indice_mochila < I.k; indice_mochila++)
+  while (j < I.k) // I.k -> total de mochilas
   {
-    sum_peso = 0;
-    while (sum_peso < I.C[indice_mochila])
+    i = RandomInteger(0, I.n - 1); //Escolher um item aleatoriamente
+    if (I.item[i].index == -1)     // verifica se o item ja foi levado
     {
-      i = RandomInteger(1, I.n); // item que sera pego
-      // while (I.item[i].index != 0) // ate pegar um item que nao esteja sendo usado, ele continua sorteando
-      // {
-      //   i = RandomInteger(1 , I.n);
-      // }
-      if (I.item[i].index == 0)
+      if (I.item[i].peso < I.C[j]) // verifica se o peso do item cabe na mochila
       {
-        I.item[i].index = indice_mochila; // marca o valor como ja utilizado em qual mochila
-        sum_peso += I.item[i].peso;
-        z += I.item[i].valor; // soma o valor sorteado a soma total
+        I.item[i].index = j; // indicar em qual mochila foi levado o item
+        I.C[j] -= I.item[i].peso;
+        z += I.item[i].valor;
+      }
+      else
+      {
+        if (j >= I.k)
+        {
+          i = I.n;
+        }
+        else
+        {
+          j++;
+          i--;
+        }
       }
     }
   }
+  // for (; indice_mochila < I.k; indice_mochila++)
+  // {
+  //   sum_peso = 0;
+
+  //   while (sum_peso < I.C[indice_mochila])
+  //   {
+  //     i = RandomInteger(0, I.n - 1); // item que sera pego
+
+  //     if (I.item[i].index == -1)
+  //     {
+  //       // I.item[i].index = indice_mochila; // marca o valor como ja utilizado em qual mochila
+  //       // sum_peso += I.item[i].peso;
+  //       // z += I.item[i].valor; // soma o valor sorteado a soma total
+  //       if (sum_peso + I.item[i].peso < I.C[indice_mochila])
+  //       {
+  //         sum_peso += I.item[i].peso;
+  //         I.item[i].index = indice_mochila;
+  //         z += I.item[i].valor;
+  //       }
+  //     }
+  //   }
+  //   printf("%d %d\n", sum_peso, indice_mochila);
+
   return z;
 }
 
@@ -402,7 +447,7 @@ double random_heuristica(Tinstance I)
 double heuristica(Tinstance I, int tipo)
 {
   double z = 0.0;
-  // TODO...
+
   if (tipo == 3)
   {
     z = guloso(I);
@@ -412,6 +457,28 @@ double heuristica(Tinstance I, int tipo)
     z = random_heuristica(I);
   }
   return z;
+}
+
+void gerar_arquivo(char *filename, double z, Tinstance I)
+{
+  FILE *arquivo_saida;
+  char nomeArqSaida[64];
+  char z_vet[64];
+  int tamanho;
+  int i;
+
+  sprintf(nomeArqSaida, "%s.sol", filename); // nome do arquivo de saida
+  sprintf(z_vet, "%lf", z);                  // converter o valor double em char
+
+  arquivo_saida = fopen(nomeArqSaida, "w");
+
+  tamanho = strlen(z_vet); // tamanho do vetor
+  for (i = 0; i < tamanho; i++)
+  {
+    fputc(z_vet[i], arquivo_saida); // add valor da solucao no arquivo
+  }
+
+  fclose(arquivo_saida);
 }
 
 /* programa principal */
@@ -464,6 +531,9 @@ int main(int argc, char **argv)
   // libera memoria alocada
   free_instancia(I);
   //free(x);
+
+  gerar_arquivo(argv[1], z, I);
+
   return 0;
 }
 
