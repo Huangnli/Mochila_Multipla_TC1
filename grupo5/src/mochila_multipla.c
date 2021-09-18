@@ -337,16 +337,17 @@ double guloso(Tinstance I)
   qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
 
   // inicializa os index do item com valor zero
-  for (int i = 0; i <= I.n; i++)
+  for (int i = 0; i < I.n; i++)
     I.item[i].index = 0;
 
+  // Percorre toda lista de itens
   for (int i = 0; i < I.n; i++)
   {
     j = 0;
-    while (j < I.k)
+    while (j < I.k) // Tenta colocar o item em alguma mochila
     {
-      if (I.item[i].peso <= I.C[j])
-      {
+      if (I.item[i].peso <= I.C[j]) // Verifica se o peso do item não
+      {			     // ultrapassa a capacidade da mochila
       	I.item[i].index = j+1;
       	I.C[j] -= I.item[i].peso;
       	z += I.item[i].valor;
