@@ -50,7 +50,6 @@ typedef struct
   int num;      /* numero do item */
   double valor; /* valor do item */
   int peso;     /* peso do item */
-  float razao;  /* razao entre valor e peso */
   int index;    /* mochila ao qual o item pertence */
 } Titem;
 
@@ -68,6 +67,7 @@ void free_instancia(Tinstance I);
 int RandomInteger(int low, int high);
 int comparador(const void *valor1, const void *valor2);
 double guloso(Tinstance I);
+double random_heuristica(Tinstance I);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 void gerar_arquivo(char *filename, double z, Tinstance I);
@@ -332,46 +332,28 @@ int comparador(const void *valor1, const void *valor2)
 double guloso(Tinstance I)
 {
   double z = 0.0; // melhor resposta;
-  int j = 0;      // indice da mochila
-
-  /*
-  for (int i = 0; i < I.n; i++)
-  {
-    I.item[i].razao = I.item[i].valor / I.item[i].peso;
-  }
-  */
+  int j;      // indice da mochila
 
   qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
 
   // inicializa os index do item com valor zero
   for (int i = 0; i <= I.n; i++)
-    I.item[i].index = -1;
+    I.item[i].index = 0;
 
-  while (j < I.k)
+  for (int i = 0; i < I.n; i++)
   {
-    for (int i = 0; i < I.n; i++)
+    j = 0;
+    while (j < I.k)
     {
-      if (I.item[i].index == -1)
+      if (I.item[i].peso <= I.C[j])
       {
-        if (I.item[i].peso < I.C[j])
-        {
-          I.item[i].index = j;
-          I.C[j] -= I.item[i].peso;
-          z += I.item[i].valor;
-        }
-        else
-        {
-          if (j >= I.k)
-          {
-            i = I.n;
-          }
-          else
-          {
-            j++;
-            i--;
-          }
-        }
+      	I.item[i].index = j+1;
+      	I.C[j] -= I.item[i].peso;
+      	z += I.item[i].valor;
+      	j = I.k;
       }
+      else
+        j++;
     }
   }
 
