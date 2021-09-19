@@ -68,6 +68,7 @@ int RandomInteger(int low, int high);
 int comparador(const void *valor1, const void *valor2);
 double guloso(Tinstance I);
 double random_heuristica(Tinstance I);
+void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 void gerar_arquivo(char *filename, double z, Tinstance I);
