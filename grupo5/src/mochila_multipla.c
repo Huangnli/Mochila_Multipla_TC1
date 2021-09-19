@@ -71,6 +71,7 @@ double random_heuristica(Tinstance I);
 void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
+void write_arq(char *string, FILE *arquivo_saida);
 void gerar_arquivo(char *filename, double z, Tinstance I);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
@@ -334,7 +335,7 @@ int comparador(const void *valor1, const void *valor2)
 double guloso(Tinstance I)
 {
   double z = 0.0; // Melhor resposta;
-  int j;      // Indice da mochila
+  int j;          // Indice da mochila
 
   qsort(I.item, I.n, sizeof(Titem), comparador); //Ordenacao da lista de itens pelo valor de cada item
 
@@ -349,11 +350,11 @@ double guloso(Tinstance I)
     while (j < I.k) // Tenta colocar o item em alguma mochila
     {
       if (I.item[i].peso <= I.C[j]) // Verifica se o peso do item não
-      {			     // ultrapassa a capacidade da mochila
-      	I.item[i].index = j+1;
-      	I.C[j] -= I.item[i].peso;
-      	z += I.item[i].valor;
-      	j = I.k;
+      {                             // ultrapassa a capacidade da mochila
+        I.item[i].index = j + 1;
+        I.C[j] -= I.item[i].peso;
+        z += I.item[i].valor;
+        j = I.k;
       }
       else
         j++;
@@ -367,17 +368,17 @@ double guloso(Tinstance I)
 void troca(Titem *a, Titem *b)
 {
   Titem aux;
-  
+
   aux.num = (*a).num;
   aux.valor = (*a).valor;
   aux.peso = (*a).peso;
   aux.index = (*a).index;
-  
+
   (*a).num = (*b).num;
   (*a).valor = (*b).valor;
   (*a).peso = (*b).peso;
   (*a).index = (*b).index;
-  
+
   (*b).num = aux.num;
   (*b).valor = aux.valor;
   (*b).peso = aux.peso;
@@ -388,25 +389,25 @@ void troca(Titem *a, Titem *b)
 double random_heuristica(Tinstance I)
 {
   double z = 0.0; // Melhor resposta
-  int i; // Item escolhido aleatoriamente
-  int j; // Indice da mochila
-  int n = I.n; // Numero de itens restantes na lista de itens
-  
+  int i;          // Item escolhido aleatoriamente
+  int j;          // Indice da mochila
+  int n = I.n;    // Numero de itens restantes na lista de itens
+
   for (int k = 0; k < I.n; k++)
     I.item[k].index = 0;
-   
+
   srand(time(NULL));
-  
+
   while (n > 0)
   {
-    i = RandomInteger(0, n-1); // Escolhe um item aleatoriamente
+    i = RandomInteger(0, n - 1); // Escolhe um item aleatoriamente
     j = 0;
-    
+
     while (j < I.k) // Verifica em qual mochila colocar o item
     {
       if (I.item[i].peso <= I.C[j])
       {
-        I.item[i].index = j+1;
+        I.item[i].index = j + 1;
         I.C[j] -= I.item[i].peso;
         z += I.item[i].valor;
         j = I.k;
@@ -414,9 +415,9 @@ double random_heuristica(Tinstance I)
       else
         j++;
     }
-    
-    troca(&I.item[i], &I.item[n-1]); // Troca o item escolhido pelo ultimo item
-    n--; // Tira o ultimo item da lista para ele nao ser escolhido novamente		
+
+    troca(&I.item[i], &I.item[n - 1]); // Troca o item escolhido pelo ultimo item
+    n--;                               // Tira o ultimo item da lista para ele nao ser escolhido novamente
   }
 
   return z;
@@ -438,23 +439,45 @@ double heuristica(Tinstance I, int tipo)
   return z;
 }
 
+void write_arq(char *string, FILE *arquivo_saida)
+{
+  int tamanho;
+  int i;
+  tamanho = strlen(string); // tamanho do vetor
+  for (i = 0; i < tamanho; i++)
+  {
+    fputc(string[i], arquivo_saida); // add valor da solucao no arquivo
+  }
+}
+
 void gerar_arquivo(char *filename, double z, Tinstance I)
 {
   FILE *arquivo_saida;
   char nomeArqSaida[64];
   char z_vet[64];
-  int tamanho;
+  char mochila_item[13];
   int i;
+  int j;
+  int r; // total de itens levados na mochila
 
   sprintf(nomeArqSaida, "%s.sol", filename); // nome do arquivo de saida
-  sprintf(z_vet, "%lf", z);                  // converter o valor double em char
-
   arquivo_saida = fopen(nomeArqSaida, "w");
 
-  tamanho = strlen(z_vet); // tamanho do vetor
-  for (i = 0; i < tamanho; i++)
+  sprintf(z_vet, "%lf", z); // converter o valor double em char
+  write_arq(z_vet, arquivo_saida);
+
+  for (j = 1; j <= I.k; j++)
   {
-    fputc(z_vet[i], arquivo_saida); // add valor da solucao no arquivo
+    r = 0;
+    for (i = 0; i < I.n; i++)
+    {
+      if (j == I.item[i].index)
+      {
+        r++;
+      }
+    }
+    sprintf(mochila_item, "\nmochila %d %d", j, r);
+    write_arq(mochila_item, arquivo_saida);
   }
 
   fclose(arquivo_saida);
