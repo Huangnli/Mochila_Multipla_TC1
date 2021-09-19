@@ -312,6 +312,7 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   return z;
 }
 
+// Função auxiliar de comparacao para o qsort
 int comparador(const void *valor1, const void *valor2)
 {
   if ((*(Titem *)valor1).valor > (*(Titem *)valor2).valor)
@@ -328,15 +329,15 @@ int comparador(const void *valor1, const void *valor2)
   }
 }
 
-//primeira heuristica implementada pelo grupo
+//Primeira heuristica implementada pelo grupo
 double guloso(Tinstance I)
 {
-  double z = 0.0; // melhor resposta;
-  int j;      // indice da mochila
+  double z = 0.0; // Melhor resposta;
+  int j;      // Indice da mochila
 
-  qsort(I.item, I.n, sizeof(Titem), comparador); //ordenacao do array
+  qsort(I.item, I.n, sizeof(Titem), comparador); //Ordenacao da lista de itens pelo valor de cada item
 
-  // inicializa os index do item com valor zero
+  // Inicializa os index do item com valor zero
   for (int i = 0; i < I.n; i++)
     I.item[i].index = 0;
 
@@ -361,67 +362,61 @@ double guloso(Tinstance I)
   return z;
 }
 
-//segunda heuristica implementada pelo grupo
+// Função que troca dois itens da lista de itens de lugar
+void troca(Titem *a, Titem *b)
+{
+  Titem aux;
+  
+  aux.num = (*a).num;
+  aux.valor = (*a).valor;
+  aux.peso = (*a).peso;
+  aux.index = (*a).index;
+  
+  (*a).num = (*b).num;
+  (*a).valor = (*b).valor;
+  (*a).peso = (*b).peso;
+  (*a).index = (*b).index;
+  
+  (*b).num = aux.num;
+  (*b).valor = aux.valor;
+  (*b).peso = aux.peso;
+  (*b).index = aux.index;
+}
+
+//Segunda heuristica implementada pelo grupo
 double random_heuristica(Tinstance I)
 {
-  double z = 0.0; // melhor resposta
-  int i = 0;
-  int j = 0;
-  // int sum_peso;
-  // int indice_mochila = 0; // qual mochila esta sendo usado
-
-  for (int i = 0; i < I.n; i++) // inicializar o index com -1 (item não levado)
-    I.item[i].index = -1;
-
+  double z = 0.0; // Melhor resposta
+  int i; // Item escolhido aleatoriamente
+  int j; // Indice da mochila
+  int n = I.n; // Numero de itens restantes na lista de itens
+  
+  for (int k = 0; k < I.n; k++)
+    I.item[k].index = 0;
+   
   srand(time(NULL));
-
-  while (j < I.k) // I.k -> total de mochilas
+  
+  while (n > 0)
   {
-    i = RandomInteger(0, I.n - 1); //Escolher um item aleatoriamente
-    if (I.item[i].index == -1)     // verifica se o item ja foi levado
+    i = RandomInteger(0, n-1); // Escolhe um item aleatoriamente
+    j = 0;
+    
+    while (j < I.k) // Verifica em qual mochila colocar o item
     {
-      if (I.item[i].peso < I.C[j]) // verifica se o peso do item cabe na mochila
+      if (I.item[i].peso <= I.C[j])
       {
-        I.item[i].index = j; // indicar em qual mochila foi levado o item
+        I.item[i].index = j+1;
         I.C[j] -= I.item[i].peso;
         z += I.item[i].valor;
+        j = I.k;
       }
       else
-      {
-        if (j >= I.k)
-        {
-          i = I.n;
-        }
-        else
-        {
-          j++;
-          i--;
-        }
-      }
+        j++;
     }
+    
+    troca(&I.item[i], &I.item[n-1]); // Troca o item escolhido pelo ultimo item
+    n--; // Tira o ultimo item da lista para ele nao ser escolhido novamente		
   }
-  // for (; indice_mochila < I.k; indice_mochila++)
-  // {
-  //   sum_peso = 0;
-
-  //   while (sum_peso < I.C[indice_mochila])
-  //   {
-  //     i = RandomInteger(0, I.n - 1); // item que sera pego
-
-  //     if (I.item[i].index == -1)
-  //     {
-  //       // I.item[i].index = indice_mochila; // marca o valor como ja utilizado em qual mochila
-  //       // sum_peso += I.item[i].peso;
-  //       // z += I.item[i].valor; // soma o valor sorteado a soma total
-  //       if (sum_peso + I.item[i].peso < I.C[indice_mochila])
-  //       {
-  //         sum_peso += I.item[i].peso;
-  //         I.item[i].index = indice_mochila;
-  //         z += I.item[i].valor;
-  //       }
-  //     }
-  //   }
-  //   printf("%d %d\n", sum_peso, indice_mochila);
 
   return z;
 }
