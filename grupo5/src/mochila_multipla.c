@@ -2,6 +2,12 @@
 codigo exemplo de uso do glpk para MIP (mixed integer programming)
 By: Edna A. Hoshino
 
+codigo das heuristicas
+By: Adriano Rodrigues Alves
+By: Julio Huang
+By: Luís Fernando Leite França
+By: Patrick Escorsi Silva
+
 Problema da mochila multipla: 
 dados um conjunto de itens I={1,2,...,n} e um conjunto de mochilas K={1,2,..., k}
 em que cada item i tem um peso pi e um valor vi
@@ -463,7 +469,7 @@ void gerar_arquivo(char *filename, double z, Tinstance I)
   sprintf(nomeArqSaida, "%s.sol", filename); // nome do arquivo de saida
   arquivo_saida = fopen(nomeArqSaida, "w");
 
-  sprintf(vetor, "%lf", z); // converter o valor double em char
+  sprintf(vetor, "%lf", z);        // converter o valor double em char
   write_arq(vetor, arquivo_saida); // inserindo valor da solucao
 
   for (j = 1; j <= I.k; j++)
