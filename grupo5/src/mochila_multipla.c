@@ -454,17 +454,17 @@ void gerar_arquivo(char *filename, double z, Tinstance I)
 {
   FILE *arquivo_saida;
   char nomeArqSaida[64];
-  char z_vet[64];
-  char mochila_item[13];
+  char vetor[64];
   int i;
   int j;
-  int r; // total de itens levados na mochila
+  int r;       // total de itens levados na mochila
+  int k = I.k; // total de mochila
 
   sprintf(nomeArqSaida, "%s.sol", filename); // nome do arquivo de saida
   arquivo_saida = fopen(nomeArqSaida, "w");
 
-  sprintf(z_vet, "%lf", z); // converter o valor double em char
-  write_arq(z_vet, arquivo_saida);
+  sprintf(vetor, "%lf", z); // converter o valor double em char
+  write_arq(vetor, arquivo_saida); // inserindo valor da solucao
 
   for (j = 1; j <= I.k; j++)
   {
@@ -476,8 +476,33 @@ void gerar_arquivo(char *filename, double z, Tinstance I)
         r++;
       }
     }
-    sprintf(mochila_item, "\nmochila %d %d", j, r);
-    write_arq(mochila_item, arquivo_saida);
+    if (r == 0)
+      k--;
+  }
+  sprintf(vetor, " %d\n", k);
+  write_arq(vetor, arquivo_saida); // inserindo total de mochila utilizado
+
+  for (j = 1; j <= I.k; j++)
+  {
+    r = 0;
+    for (i = 0; i < I.n; i++)
+    {
+      if (j == I.item[i].index)
+      {
+        r++;
+      }
+    }
+    sprintf(vetor, "mochila %d %d\n", j, r);
+    write_arq(vetor, arquivo_saida); // inserindo indice da mochila e total de itens levados
+    for (i = 0; i < I.n; i++)
+    {
+      if (j == I.item[i].index)
+      {
+        sprintf(vetor, "%d ", i + 1);
+        write_arq(vetor, arquivo_saida); // inserindo indice dos itens levados na mochila
+      }
+    }
+    write_arq("\n", arquivo_saida);
   }
 
   fclose(arquivo_saida);
