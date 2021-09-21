@@ -474,8 +474,8 @@ void gerar_arquivo_sol(char *filename, double z, Tinstance I)
         if (I.item[i].index == j)
           fprintf(arquivo_saida, "%d ", i+1);
       }
-      fprintf(arquivo_saida, "\n");
     }
+    fprintf(arquivo_saida, "\n");
   }
 
   fclose(arquivo_saida);
