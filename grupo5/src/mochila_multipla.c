@@ -617,7 +617,6 @@ int main(int argc, char **argv)
   PRINTF("Valor da solucao: %lf\tTempo gasto=%lf\n", z, ((double)agora - antes) / CLOCKS_PER_SEC);
 
   printf("%s;%d;%d;%d;%.0lf;%lf\n", argv[1], tipo, I.n, I.k, z, ((double)agora - antes) / CLOCKS_PER_SEC);
-  //free(x);
   
   tempo = ((double)agora - antes) / CLOCKS_PER_SEC;
 
