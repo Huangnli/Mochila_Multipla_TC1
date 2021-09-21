@@ -460,56 +460,34 @@ void write_arq(char *string, FILE *arquivo_saida)
 void gerar_arquivo_sol(char *filename, double z, Tinstance I)
 {
   FILE *arquivo_saida;
-  char nomeArqSaida[64];
-  char vetor[64];
-  int i;
-  int j;
-  int r;       // total de itens levados na mochila
-  int k = I.k; // total de mochila
+  char nomeArquivo[64];
+  int soma;
 
-  sprintf(nomeArqSaida, "%s.sol", filename); // nome do arquivo de saida
-  arquivo_saida = fopen(nomeArqSaida, "w");
-
-  sprintf(vetor, "%lf", z);        // converter o valor double em char
-  write_arq(vetor, arquivo_saida); // inserindo valor da solucao
-
-  for (j = 1; j <= I.k; j++)
+  strcpy(nomeArquivo, filename);
+  strcat(nomeArquivo, ".sol");
+  
+  arquivo_saida = fopen(nomeArquivo, "w");
+  
+  fprintf(arquivo_saida, "%.0lf %d\n", z, I.k);
+  
+  for (int j = 1; j <= I.k; j++)
   {
-    r = 0;
-    for (i = 0; i < I.n; i++)
+    soma = 0;
+    for (int i = 0; i < I.n; i++)
     {
-      if (j == I.item[i].index)
-      {
-        r++;
-      }
+      if (I.item[i].index == j)
+        soma += 1;
     }
-    if (r == 0)
-      k--;
-  }
-  sprintf(vetor, " %d\n", k);
-  write_arq(vetor, arquivo_saida); // inserindo total de mochila utilizado
-
-  for (j = 1; j <= I.k; j++)
-  {
-    r = 0;
-    for (i = 0; i < I.n; i++)
+    fprintf(arquivo_saida, "mochila %d %d\n", j, soma);
+    if (soma != 0)
     {
-      if (j == I.item[i].index)
+      for (int i = 0; i < I.n; i++)
       {
-        r++;
+        if (I.item[i].index == j)
+          fprintf(arquivo_saida, "%d ", i+1);
       }
+      fprintf(arquivo_saida, "\n");
     }
-    sprintf(vetor, "mochila %d %d\n", j, r);
-    write_arq(vetor, arquivo_saida); // inserindo indice da mochila e total de itens levados
-    for (i = 0; i < I.n; i++)
-    {
-      if (j == I.item[i].index)
-      {
-        sprintf(vetor, "%d ", i + 1);
-        write_arq(vetor, arquivo_saida); // inserindo indice dos itens levados na mochila
-      }
-    }
-    write_arq("\n", arquivo_saida);
   }
 
   fclose(arquivo_saida);
