@@ -77,7 +77,6 @@ double random_heuristica(Tinstance I);
 void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
-void write_arq(char *string, FILE *arquivo_saida);
 void gerar_arquivo_sol(char *filename, double z, Tinstance I);
 void gerar_arquivo_out(char *filename, int tipo, double z, double tempo);
 
@@ -444,17 +443,6 @@ double heuristica(Tinstance I, int tipo)
     z = random_heuristica(I);
   }
   return z;
-}
-
-void write_arq(char *string, FILE *arquivo_saida)
-{
-  int tamanho;
-  int i;
-  tamanho = strlen(string); // tamanho do vetor
-  for (i = 0; i < tamanho; i++)
-  {
-    fputc(string[i], arquivo_saida); // add valor da solucao no arquivo
-  }
 }
 
 void gerar_arquivo_sol(char *filename, double z, Tinstance I)
