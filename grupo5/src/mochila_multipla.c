@@ -72,7 +72,8 @@ void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 void write_arq(char *string, FILE *arquivo_saida);
-void gerar_arquivo(char *filename, double z, Tinstance I);
+void gerar_arquivo_sol(char *filename, double z, Tinstance I);
+void gerar_arquivo_out(char *filename, int tipo, double z, double tempo);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
 int carga_lp(glp_prob **lp, Tinstance I)
@@ -450,7 +451,7 @@ void write_arq(char *string, FILE *arquivo_saida)
   }
 }
 
-void gerar_arquivo(char *filename, double z, Tinstance I)
+void gerar_arquivo_sol(char *filename, double z, Tinstance I)
 {
   FILE *arquivo_saida;
   char nomeArqSaida[64];
@@ -508,10 +509,65 @@ void gerar_arquivo(char *filename, double z, Tinstance I)
   fclose(arquivo_saida);
 }
 
+void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
+{
+  FILE *arquivo_saida;
+  char nomeArquivo[100];
+  const char* gerador;
+  int status;
+  char UB[10];
+  
+  const char* implementacao1 = "-1";
+  const char* implementacao2 = "-2";
+  
+  const char* heuristica1 = "-1";
+  const char* heuristica2 = "-2";
+  
+  strcpy(nomeArquivo, filename);
+  
+  if (tipo < 3)
+  {
+    strcat(nomeArquivo, implementacao1);
+    strcat(nomeArquivo, "-0");
+    if (tipo == 1)
+      gerador = "1:relaxação";
+    else
+      gerador = "2:branch-and-bound";
+  }
+  else
+  {
+    strcat(nomeArquivo, implementacao2);
+    if (tipo == 3)
+    {
+      strcat(nomeArquivo, heuristica1);
+      gerador = "3:heuristica gulosa";
+    }
+    else
+    {
+      strcat(nomeArquivo, heuristica2);
+      gerador = "4:heuristica aleatória";
+    }
+    status = 10;
+  }
+  
+  strcat(nomeArquivo, ".out");
+  
+  arquivo_saida = fopen(nomeArquivo, "w");
+  
+  if (tipo < 3)
+    sprintf(UB, "%.0lf", z);
+  else
+    sprintf(UB, " ");
+  
+  fprintf(arquivo_saida, "%s;%s;%lf;%.0lf;%s;%d", filename, gerador, tempo, z, UB, status);
+  
+  fclose(arquivo_saida);
+}
+
 /* programa principal */
 int main(int argc, char **argv)
 {
-  double z, *x;
+  double z, *x, tempo;
   clock_t antes, agora;
   int tipo;
   Tinstance I;
@@ -555,11 +611,16 @@ int main(int argc, char **argv)
   PRINTF("Valor da solucao: %lf\tTempo gasto=%lf\n", z, ((double)agora - antes) / CLOCKS_PER_SEC);
 
   printf("%s;%d;%d;%d;%.0lf;%lf\n", argv[1], tipo, I.n, I.k, z, ((double)agora - antes) / CLOCKS_PER_SEC);
+  //free(x);
+  
+  tempo = ((double)agora - antes) / CLOCKS_PER_SEC;
+
+  gerar_arquivo_sol(argv[1], z, I);
+  
+  gerar_arquivo_out(argv[1], tipo, z, tempo);
+  
   // libera memoria alocada
   free_instancia(I);
-  //free(x);
-
-  gerar_arquivo(argv[1], z, I);
 
   return 0;
 }
