@@ -3,8 +3,8 @@ Um algoritmo exato branch-and-bound e heurísticas para o problema da mochila m�
 
 ## Implementação
 As seguintes tarefas de programação devem ser realizadas, usando as rotinas da biblioteca GLPK:
-- [ ] I1: implemente um algoritmo de branch-and-bound para o MKP usando a formulação (F1);
-- [ ] I2: Proponha e implemente pelo menos duas heurísticas ingênuas para gerar boas soluções para o
+- [x] I1: implemente um algoritmo de branch-and-bound para o MKP usando a formulação (F1);
+- [x] I2: Proponha e implemente pelo menos duas heurísticas ingênuas para gerar boas soluções para o
 MKP. Dica: discutimos, na aula prática, duas heurísticas simples, uma gulosa e outra aleatória, para gerar soluções para o MKP. A ideia é propor alguma melhoria em alguma dessas heurísticas, ou propor uma outra heurística simples (sem o uso de metaheurísticas)
 
 ## Testes
