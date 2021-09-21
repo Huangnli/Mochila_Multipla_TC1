@@ -586,9 +586,11 @@ int main(int argc, char **argv)
   
   tempo = ((double)agora - antes) / CLOCKS_PER_SEC;
 
-  gerar_arquivo_sol(argv[1], z, I);
-  
-  gerar_arquivo_out(argv[1], tipo, z, tempo);
+  if (tipo > 2)
+  {
+    gerar_arquivo_sol(argv[1], z, I);
+    gerar_arquivo_out(argv[1], tipo, z, tempo);
+  }
   
   // libera memoria alocada
   free_instancia(I);
