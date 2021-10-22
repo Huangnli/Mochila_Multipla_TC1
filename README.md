@@ -30,7 +30,7 @@ e o tempo médio gasto pela heurística.
 
 ## Implementação
 - [x] I1: implemente um algoritmo de branch-and-bound para o MKP usando a formulação (F1);
-- [] I2: Proponha e implemente uma heurística baseada em modelo matemático da classe das heurística de
+- [ ] I2: Proponha e implemente uma heurística baseada em modelo matemático da classe das heurística de
 melhoria ou da classe de heurística baseadas na relaxação para gerar boas soluções para o MKP.
 Dica: discutimos, durante as aulas, algumas heurísticas dessas classes para o MKP. A
 ideia é implementar alguma dessas heurísticas, ou propor uma outra heurística usando
@@ -38,14 +38,14 @@ um dos métodos dessa classe visto em aula.
 
 ## Testes
 
-- [] T1: (80% da nota) Verifique a qualidade das soluções geradas pelas heurísticas propostas e implementadas em I2. Calcule a qualidade das soluções, usando a fórmula do gap de dualidade, que é computado
+- [ ] T1: (80% da nota) Verifique a qualidade das soluções geradas pelas heurísticas propostas e implementadas em I2. Calcule a qualidade das soluções, usando a fórmula do gap de dualidade, que é computado
 pela fórmula 100(UB − LB)/UB e dá uma garantia para a qualidade da solução. Quando o gap
 é zero, temos que a solução encontrada é ótima. Nessa fórmula, LB é o valor da solução gerada
 pela heurística e UB é o valor da relaxação linear (ou o valor do melhor limitante dual obtido pelo
 algoritmo exato na implementação I1). Reporte o gap médio de cada heurística, o total de instâncias
 testes em que cada heurística obteve melhor resultado dentre as heurísticas propostas e o tempo
 médio gasto pela heurística.
-- [] T2: (20% da nota) Compare os resultados de desempenho e de qualidade das soluções geradas pela
+- [ ] T2: (20% da nota) Compare os resultados de desempenho e de qualidade das soluções geradas pela
 implementação I2 em relação à qualidade e desempenho das heurísticas ingênuas implementadas
 no primeiro trabalho prático. Caso o grupo não tenha implementado as heurísticas ingênuas, fica
 a critério do grupo implementá-las nesta etada ou usar o código das heurísticas ingênuas a ser
