@@ -74,6 +74,7 @@ int RandomInteger(int low, int high);
 int comparador(const void *valor1, const void *valor2);
 double guloso(Tinstance I);
 double random_heuristica(Tinstance I);
+double guloso_melhorada(Tinstance I);
 void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
@@ -429,6 +430,59 @@ double random_heuristica(Tinstance I)
   return z;
 }
 
+//Heuristica guloso melhorada
+double guloso_melhorada(Tinstance I)
+{
+  double z1 = 0.0; // Melhor resposta do relaxado
+  double z2 = 0.0; // Melhor resposta do guloso
+  double *x;
+  int tipo = 1;
+  int j;
+  // Tinstance I_PLI = I;
+
+  x = (double *)malloc(sizeof(double) * (I.n * I.k)); 
+  z1 = otimiza_PLI(I, tipo, x);
+  z2 = guloso(I);
+
+  /*for (int k = 0; k < I.k; k++) { // imprime os itens pegos pela heuristica relaxada
+    for (i = 0; i < I.n; i++){
+        printf("%lf\n", x[k*I.n + i]);
+    }
+  }*/
+
+  for (int i = 0; i < I.n; i++) {
+    if (I.item[i].index != 0) {
+      if (x[(I.item[i].index-1)*I.n + i] != 1.0) { // item vai ser tirado da mochila
+        I.C[(I.item[i].index-1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
+        z2 -= I.item[i].valor;  // ajusta o valor da mochila
+        I.item[i].index = 0; // retira o item da mochla
+      }
+    }
+  }
+
+  // Percorre a lista de itens
+  for (int i = 0; i < I.n; i++)
+  {
+    j = I.k - 1;
+    while (j >= 0) // Tenta colocar o item em alguma mochila
+    {
+      if (I.item[i].peso <= I.C[j] && I.item[i].index == 0) // Verifica se o peso do item não
+      {                             // ultrapassa a capacidade da mochila e se o item ainda não
+        I.item[i].index = j + 1;    // foi escolhido
+        I.C[j] -= I.item[i].peso;
+        z2 += I.item[i].valor;
+        j = I.k;
+       // printf("oiii %lf\n", z2);
+      }
+      else
+        j--;
+    }
+  }
+
+  free(x);
+  return z2;
+}
+
 /* heuristica a ser implementada */
 double heuristica(Tinstance I, int tipo)
 {
@@ -438,10 +492,14 @@ double heuristica(Tinstance I, int tipo)
   {
     z = guloso(I);
   }
-  else
+  else if (tipo == 4)
   {
     z = random_heuristica(I);
   }
+  else {
+    z = guloso_melhorada(I);
+  }
+
   return z;
 }
 
@@ -559,9 +617,9 @@ int main(int argc, char **argv)
   }
 
   tipo = atoi(argv[2]);
-  if (tipo < 1 || tipo > 4)
+  if (tipo < 1 || tipo > 5)
   {
-    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria)\n");
+    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria), 5 (heuristica gulosa melhorada)\n");
     exit(1);
   }
 
