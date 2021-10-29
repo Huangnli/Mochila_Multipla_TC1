@@ -6,7 +6,7 @@ codigo das heuristicas
 By: Adriano Rodrigues Alves
 By: Julio Huang
 By: Luís Fernando Leite França
-By: Patrick Escorsi Silva
+By: Patrick Escorsi Silva (F)
 
 Problema da mochila multipla: 
 dados um conjunto de itens I={1,2,...,n} e um conjunto de mochilas K={1,2,..., k}
@@ -80,6 +80,8 @@ double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 void gerar_arquivo_sol(char *filename, double z, Tinstance I);
 void gerar_arquivo_out(char *filename, int tipo, double z, double tempo);
+double destroy_rins(Tinstance I, double z, double *x);
+double repair_rins(Tinstance I, double z, double *x);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
 int carga_lp(glp_prob **lp, Tinstance I)
@@ -430,6 +432,46 @@ double random_heuristica(Tinstance I)
   return z;
 }
 
+double destroy_rins(Tinstance I, double z, double *x)
+{
+  for (int i = 0; i < I.n; i++)
+  {
+    if (I.item[i].index != 0)
+    {
+      if (x[(I.item[i].index - 1) * I.n + i] != 1.0)
+      {                                               // item vai ser tirado da mochila
+        I.C[(I.item[i].index - 1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
+        z -= I.item[i].valor;                         // ajusta o valor da solução
+        I.item[i].index = 0;                          // retira o item da mochila
+      }
+    }
+  }
+  return z;
+}
+
+double repair_rins(Tinstance I, double z, double *x)
+{
+  int j;
+  for (int i = 0; i < I.n; i++)
+  {
+    j = I.k - 1;
+    while (j >= 0) // Tenta colocar o item em alguma mochila
+    {
+      if (I.item[i].peso <= I.C[j] && I.item[i].index == 0) // Verifica se o peso do item não
+      {                                                     // ultrapassa a capacidade da mochila e se o item ainda não
+        I.item[i].index = j + 1;                            // foi escolhido
+        I.C[j] -= I.item[i].peso;
+        z += I.item[i].valor;
+        j = I.k;
+        // printf("oiii %lf\n", z2);
+      }
+      else
+        j--;
+    }
+  }
+  return z;
+}
+
 //Heuristica guloso melhorada
 double guloso_melhorada(Tinstance I)
 {
@@ -438,9 +480,13 @@ double guloso_melhorada(Tinstance I)
   double *x;
   int tipo = 1;
   int j;
-  // Tinstance I_PLI = I;
+  Tinstance I_PLI;
 
-  x = (double *)malloc(sizeof(double) * (I.n * I.k)); 
+  // aloca memória
+  (I_PLI).C = (int *)malloc(sizeof(int) * ((I).k));
+  (I_PLI).item = (Titem *)malloc(sizeof(Titem) * ((I).n));
+
+  x = (double *)malloc(sizeof(double) * (I.n * I.k));
   z1 = otimiza_PLI(I, tipo, x);
   z2 = guloso(I);
 
@@ -450,35 +496,34 @@ double guloso_melhorada(Tinstance I)
     }
   }*/
 
-  for (int i = 0; i < I.n; i++) {
-    if (I.item[i].index != 0) {
-      if (x[(I.item[i].index-1)*I.n + i] != 1.0) { // item vai ser tirado da mochila
-        I.C[(I.item[i].index-1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
-        z2 -= I.item[i].valor;  // ajusta o valor da mochila
-        I.item[i].index = 0; // retira o item da mochla
-      }
-    }
-  }
+  z2 = destroy_rins(I, z2, x);
 
   // Percorre a lista de itens
+  // repair:
+  z2 = repair_rins(I, z2, x);
+
+  // destroi novamente
+  z2 = destroy_rins(I, z2, x);
+
+  j = 0;
   for (int i = 0; i < I.n; i++)
   {
-    j = I.k - 1;
-    while (j >= 0) // Tenta colocar o item em alguma mochila
-    {
-      if (I.item[i].peso <= I.C[j] && I.item[i].index == 0) // Verifica se o peso do item não
-      {                             // ultrapassa a capacidade da mochila e se o item ainda não
-        I.item[i].index = j + 1;    // foi escolhido
-        I.C[j] -= I.item[i].peso;
-        z2 += I.item[i].valor;
-        j = I.k;
-       // printf("oiii %lf\n", z2);
-      }
-      else
-        j--;
+    if (I.item[i].index == 0)
+    {                            // item nao foi pego
+      I_PLI.item[j] = I.item[i]; // I_PLI copia o item nao pego
+      j++;
     }
   }
 
+  I_PLI.n = j + 1; //Total de itens que ainda pode ser levado
+  I_PLI.k = I.k;   //Total de mochila
+  for (int i = 0; i < I.k; i++)
+  {
+    I_PLI.C[i] = I.C[i];
+  }
+
+  // libera memoria alocada
+  free_instancia(I_PLI);
   free(x);
   return z2;
 }
@@ -496,7 +541,8 @@ double heuristica(Tinstance I, int tipo)
   {
     z = random_heuristica(I);
   }
-  else {
+  else
+  {
     z = guloso_melhorada(I);
   }
 
@@ -511,11 +557,11 @@ void gerar_arquivo_sol(char *filename, double z, Tinstance I)
 
   strcpy(nomeArquivo, filename);
   strcat(nomeArquivo, ".sol");
-  
+
   arquivo_saida = fopen(nomeArquivo, "w");
-  
+
   fprintf(arquivo_saida, "%.0lf %d\n", z, I.k);
-  
+
   for (int j = 1; j <= I.k; j++)
   {
     soma = 0;
@@ -530,7 +576,7 @@ void gerar_arquivo_sol(char *filename, double z, Tinstance I)
       for (int i = 0; i < I.n; i++)
       {
         if (I.item[i].index == j)
-          fprintf(arquivo_saida, "%d ", i+1);
+          fprintf(arquivo_saida, "%d ", i + 1);
       }
     }
     fprintf(arquivo_saida, "\n");
@@ -543,18 +589,18 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
 {
   FILE *arquivo_saida;
   char nomeArquivo[100];
-  const char* gerador;
+  const char *gerador;
   int status;
   char UB[10];
-  
-  const char* implementacao1 = "-1";
-  const char* implementacao2 = "-2";
-  
-  const char* heuristica1 = "-1";
-  const char* heuristica2 = "-2";
-  
+
+  const char *implementacao1 = "-1";
+  const char *implementacao2 = "-2";
+
+  const char *heuristica1 = "-1";
+  const char *heuristica2 = "-2";
+
   strcpy(nomeArquivo, filename);
-  
+
   if (tipo < 3)
   {
     strcat(nomeArquivo, implementacao1);
@@ -579,18 +625,18 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
     }
     status = 10;
   }
-  
+
   strcat(nomeArquivo, ".out");
-  
+
   arquivo_saida = fopen(nomeArquivo, "w");
-  
+
   if (tipo < 3)
     sprintf(UB, "%.0lf", z);
   else
     sprintf(UB, " ");
-  
+
   fprintf(arquivo_saida, "%s;%s;%lf;%.0lf;%s;%d", filename, gerador, tempo, z, UB, status);
-  
+
   fclose(arquivo_saida);
 }
 
@@ -641,7 +687,7 @@ int main(int argc, char **argv)
   PRINTF("Valor da solucao: %lf\tTempo gasto=%lf\n", z, ((double)agora - antes) / CLOCKS_PER_SEC);
 
   printf("%s;%d;%d;%d;%.0lf;%lf\n", argv[1], tipo, I.n, I.k, z, ((double)agora - antes) / CLOCKS_PER_SEC);
-  
+
   tempo = ((double)agora - antes) / CLOCKS_PER_SEC;
 
   if (tipo > 2)
@@ -649,7 +695,7 @@ int main(int argc, char **argv)
     gerar_arquivo_sol(argv[1], z, I);
     gerar_arquivo_out(argv[1], tipo, z, tempo);
   }
-  
+
   // libera memoria alocada
   free_instancia(I);
 
