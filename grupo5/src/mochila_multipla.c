@@ -461,7 +461,7 @@ double destroy_rins(Tinstance I, double z, double *x)
       {                                               // item vai ser tirado da mochila
         I.C[(I.item[i].index - 1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
         z -= I.item[i].valor;                         // ajusta o valor da solução
-        printf("mochila: %d item: %d\n", I.item[i].index, I.item[i].num);
+        // printf("mochila: %d item: %d\n", I.item[i].index, I.item[i].num);
         I.item[i].index = 0; // retira o item da mochila
       }
     }
@@ -552,13 +552,13 @@ double guloso_melhorada(Tinstance I)
 
   //destroy(I);
 
-  //for (int i = 0; i < I.n; i++)
-  //{
-  //  if (I.item[i].index != 0)
-  //  {
-  //    printf("\n%d %f\n", I.item[i].num, I.item[i].valor);
-  //  }
-  //}
+  for (int i = 0; i < I.n; i++)
+  {
+   if (I.item[i].index != 0)
+   {
+     printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
+   }
+  }
 
   j = 0;
   for (int i = 0; i < I.n; i++)
@@ -584,13 +584,13 @@ double guloso_melhorada(Tinstance I)
   x2 = (double *)malloc(sizeof(double) * (I_PLI.n * I_PLI.k));
   z1 = otimiza_PLI(I_PLI, 2, x2);
 
-  for (int i = 0; i < I_PLI.n * I_PLI.k; i++)
-  {
-    if (x2[i] == 1)
-    {
-      printf("\nx2= %d\n", i % I_PLI.n + 1);
-    }
-  }
+  // for (int i = 0; i < I_PLI.n * I_PLI.k; i++)
+  // {
+  //   if (x2[i] == 1)
+  //   {
+  //     printf("\nx2= %d\n", i % I_PLI.n + 1);
+  //   }
+  // }
 
   printf("\nz1: %f\n", z1);
 
@@ -601,7 +601,7 @@ double guloso_melhorada(Tinstance I)
       if (x2[j * I_PLI.n + i] == 1.0) // item levado
       {
         I.item[I_PLI.item[i].num - 1].index = (j + 1);
-        // printf("\nnum: %d %f %d %f\n", I_PLI.item[i].num, I_PLI.item[i].valor, I.item[I_PLI.item[i].num - 1].num, I.item[I_PLI.item[i].num - 1].valor);
+        printf("\nItens levados no PLI: %d %f Item do I: %d %f\n", I_PLI.item[i].num, I_PLI.item[i].valor, I.item[I_PLI.item[i].num - 1].num, I.item[I_PLI.item[i].num - 1].valor);
         break;
       }
     }
@@ -620,7 +620,7 @@ double guloso_melhorada(Tinstance I)
     if (I.item[i].index != 0)
     {
       soma += I.item[i].valor;
-      // printf("\nnum2:%d %f\n", I.item[i].num, I.item[i].valor);
+      printf("\nItens levados no I: %d %f\n", I.item[i].num, I.item[i].valor);
       // printf("\nnum2: %d\n", I.item[i].num);
     }
   }
