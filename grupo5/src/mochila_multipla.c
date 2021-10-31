@@ -81,7 +81,7 @@ double heuristica(Tinstance I, int tipo);
 double otimiza_PLI(Tinstance I, int tipo, double *x);
 void gerar_arquivo_sol(char *filename, double z, Tinstance I);
 void gerar_arquivo_out(char *filename, int tipo, double z, double tempo);
-double destroy_rins(Tinstance I, double z, double *x);
+double destroy_rins(Tinstance I, double z, double xx, double *x);
 double repair_rins(Tinstance I, double z, double *x);
 
 /* carrega o modelo de PLI nas estruturas do GLPK */
@@ -450,14 +450,14 @@ double random_heuristica(Tinstance I)
   return z;
 }
 
-double destroy_rins(Tinstance I, double z, double *x)
+double destroy_rins(Tinstance I, double z, double xx, double *x)
 {
   for (int i = 0; i < I.n; i++)
   {
     if (I.item[i].index != 0)
     {
-      // printf("x: %f\n", x[(I.item[i].index - 1) * I.n + i]);
-      if (x[(I.item[i].index - 1) * I.n + i] < 1.0)
+      // printf("x: %f item: %d xx:%f\n", x[(I.item[i].index - 1) * I.n + i], i + 1, xx);
+      if (x[(I.item[i].index - 1) * I.n + i] < xx)
       {                                               // item vai ser tirado da mochila
         I.C[(I.item[i].index - 1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
         z -= I.item[i].valor;                         // ajusta o valor da solução
@@ -541,23 +541,38 @@ double guloso_melhorada(Tinstance I)
     }
   }*/
 
-  z2 = destroy_rins(I, z2, x);
+  // for (int i = 0; i < I.n; i++)
+  // {
+  //   if (I.item[i].index != 0)
+  //   {
+  //     printf("\nItens guloso: %d %f\n", I.item[i].num, I.item[i].valor);
+  //   }
+  // }
 
-  // Percorre a lista de itens
-  // repair:
-  z2 = repair_rins(I, z2, x);
+  z2 = destroy_rins(I, z2, 1.0, x);
 
   // destroi novamente
-  z2 = destroy_rins(I, z2, x);
+  if (z2 == 0.0)
+  {
+    z2 = guloso(I);
+    qsort(I.item, I.n, sizeof(Titem), comparador_num);
+    z2 = destroy_rins(I, z2, 0.1, x);
+  }
+  else
+  {
+    // repair:
+    z2 = repair_rins(I, z2, x);
+    z2 = destroy_rins(I, z2, 1.0, x);
+  }
 
   //destroy(I);
 
   for (int i = 0; i < I.n; i++)
   {
-   if (I.item[i].index != 0)
-   {
-     printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
-   }
+    if (I.item[i].index != 0)
+    {
+      printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
+    }
   }
 
   j = 0;
