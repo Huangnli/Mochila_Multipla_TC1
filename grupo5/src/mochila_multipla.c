@@ -469,29 +469,6 @@ double destroy_rins(Tinstance I, double z, double xx, double *x)
   return z;
 }
 
-void destroy(Tinstance I)
-{
-  int maior_peso = 0;
-  int maior_num;
-
-  for (int i = 0; i < I.k; i++)
-  {
-    for (int j = 0; j < I.n; j++)
-    {
-      if (I.item[j].index == i + 1)
-      { // Verifica se o item pertence a mochila i
-        if (I.item[j].peso > maior_peso)
-        { // Pega o maior peso dentre os itens da mochila i
-          maior_peso = I.item[j].peso;
-          maior_num = j;
-        }
-      }
-    }
-    I.C[i] += maior_peso;
-    I.item[maior_num].index = 0;
-  }
-}
-
 double repair_rins(Tinstance I, double z, double *x)
 {
   int j;
@@ -518,7 +495,7 @@ double repair_rins(Tinstance I, double z, double *x)
 //Heuristica guloso melhorada
 double guloso_melhorada(Tinstance I)
 {
-  double z1 = 0.0; // Melhor resposta do relaxado
+  // double z1 = 0.0; // Melhor resposta do relaxado
   double z2 = 0.0; // Melhor resposta do guloso
   double soma = 0.0;
   double *x, *x2;
@@ -531,15 +508,9 @@ double guloso_melhorada(Tinstance I)
   (I_PLI).item = (Titem *)malloc(sizeof(Titem) * ((I).n));
 
   x = (double *)malloc(sizeof(double) * (I.n * I.k));
-  z1 = otimiza_PLI(I, tipo, x);
+  otimiza_PLI(I, tipo, x);
   z2 = guloso(I);
   qsort(I.item, I.n, sizeof(Titem), comparador_num);
-
-  /*for (int k = 0; k < I.k; k++) { // imprime os itens pegos pela heuristica relaxada
-    for (i = 0; i < I.n; i++){
-        printf("%lf\n", x[k*I.n + i]);
-    }
-  }*/
 
   // for (int i = 0; i < I.n; i++)
   // {
@@ -565,15 +536,13 @@ double guloso_melhorada(Tinstance I)
     z2 = destroy_rins(I, z2, 1.0, x);
   }
 
-  //destroy(I);
-
-  for (int i = 0; i < I.n; i++)
-  {
-    if (I.item[i].index != 0)
-    {
-      printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
-    }
-  }
+  // for (int i = 0; i < I.n; i++)
+  // {
+  //   if (I.item[i].index != 0)
+  //   {
+  //     printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
+  //   }
+  // }
 
   j = 0;
   for (int i = 0; i < I.n; i++)
@@ -593,21 +562,12 @@ double guloso_melhorada(Tinstance I)
   for (int i = 0; i < I.k; i++)
   {
     I_PLI.C[i] = I.C[i];
-    //printf("\n%d %d\n", I_PLI.C[i], I.C[i]);
   }
 
   x2 = (double *)malloc(sizeof(double) * (I_PLI.n * I_PLI.k));
-  z1 = otimiza_PLI(I_PLI, 2, x2);
+  otimiza_PLI(I_PLI, 2, x2);
 
-  // for (int i = 0; i < I_PLI.n * I_PLI.k; i++)
-  // {
-  //   if (x2[i] == 1)
-  //   {
-  //     printf("\nx2= %d\n", i % I_PLI.n + 1);
-  //   }
-  // }
-
-  printf("\nz1: %f\n", z1);
+  // printf("\nz1: %f\n", z1);
 
   for (int i = 0; i < I_PLI.n; i++)
   {
@@ -616,7 +576,7 @@ double guloso_melhorada(Tinstance I)
       if (x2[j * I_PLI.n + i] == 1.0) // item levado
       {
         I.item[I_PLI.item[i].num - 1].index = (j + 1);
-        printf("\nItens levados no PLI: %d %f Item do I: %d %f\n", I_PLI.item[i].num, I_PLI.item[i].valor, I.item[I_PLI.item[i].num - 1].num, I.item[I_PLI.item[i].num - 1].valor);
+        // printf("\nItens levados no PLI: %d %f Item do I: %d %f\n", I_PLI.item[i].num, I_PLI.item[i].valor, I.item[I_PLI.item[i].num - 1].num, I.item[I_PLI.item[i].num - 1].valor);
         break;
       }
     }
@@ -635,8 +595,7 @@ double guloso_melhorada(Tinstance I)
     if (I.item[i].index != 0)
     {
       soma += I.item[i].valor;
-      printf("\nItens levados no I: %d %f\n", I.item[i].num, I.item[i].valor);
-      // printf("\nnum2: %d\n", I.item[i].num);
+      // printf("\nItens levados no I: %d %f\n", I.item[i].num, I.item[i].valor);
     }
   }
 
@@ -737,10 +696,15 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
       strcat(nomeArquivo, heuristica1);
       gerador = "3:heuristica gulosa";
     }
+    else if (tipo == 4)
+    {
+      strcat(nomeArquivo, heuristica1);
+      gerador = "4:heuristica aleatória";
+    }
     else
     {
       strcat(nomeArquivo, heuristica2);
-      gerador = "4:heuristica aleatória";
+      gerador = "5:gulosa melhorada";
     }
     status = 10;
   }
