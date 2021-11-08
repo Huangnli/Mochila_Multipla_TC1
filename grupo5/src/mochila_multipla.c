@@ -84,7 +84,7 @@ int comparador(const void *valor1, const void *valor2);
 int comparador_num(const void *num1, const void *num2);
 double guloso(Tinstance I);
 double random_heuristica(Tinstance I);
-double guloso_melhorada(Tinstance I, my_infoT *info);
+double heuristica_melhorada(Tinstance I, my_infoT *info, int tipo);
 void troca(Titem *a, Titem *b);
 double heuristica(Tinstance I, int tipo, my_infoT *info);
 double otimiza_PLI(Tinstance I, int tipo, double *x, my_infoT *info);
@@ -541,13 +541,12 @@ double repair_rins(Tinstance I, double z, double *x)
 }
 
 //Heuristica guloso melhorada
-double guloso_melhorada(Tinstance I, my_infoT *info)
+double heuristica_melhorada(Tinstance I, my_infoT *info, int tipo)
 {
   // double z1 = 0.0; // Melhor resposta do relaxado
   double z2 = 0.0; // Melhor resposta do guloso
   double soma = 0.0;
   double *x, *x2;
-  int tipo = 1;
   int j;
   Tinstance I_PLI;
 
@@ -556,8 +555,13 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
   (I_PLI).item = (Titem *)malloc(sizeof(Titem) * ((I).n));
 
   x = (double *)malloc(sizeof(double) * (I.n * I.k));
-  otimiza_PLI(I, tipo, x, &info);
-  z2 = guloso(I);
+  otimiza_PLI(I, 1, x, &info);
+  if (tipo == 5){
+    z2 = guloso(I);
+  }
+  if (tipo == 6){
+    z2 = random_heuristica(I);
+  }
   qsort(I.item, I.n, sizeof(Titem), comparador_num);
 
   z2 = destroy_rins(I, z2, 1.0, x);
@@ -565,7 +569,12 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
   // destroi novamente
   if (z2 == 0.0)
   {
-    z2 = guloso(I);
+    if (tipo == 5){
+      z2 = guloso(I);
+    }
+    if (tipo == 6){
+      z2 = random_heuristica(I);
+    }
     qsort(I.item, I.n, sizeof(Titem), comparador_num);
     z2 = destroy_rins(I, z2, 0.1, x);
   }
@@ -641,7 +650,7 @@ double heuristica(Tinstance I, int tipo, my_infoT *info)
   }
   else
   {
-    z = guloso_melhorada(I, &info);
+    z = heuristica_melhorada(I, &info, tipo);
   }
 
   return z;
@@ -699,6 +708,7 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
   const char *heuristica1 = "-1";
   const char *heuristica2 = "-2";
   const char *heuristica3 = "-3";
+  const char *heuristica4 = "-4";
 
   strcpy(nomeArquivo, filename);
 
@@ -724,10 +734,15 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
       strcat(nomeArquivo, heuristica2);
       gerador = "4:heuristica aleatória";
     }
-    else
+    else if (tipo == 5)
     {
       strcat(nomeArquivo, heuristica3);
       gerador = "5:gulosa melhorada";
+    }
+    else
+    {
+      strcat(nomeArquivo, heuristica4);
+      gerador = "6:aleatória melhorada";
     }
     status = 10;
   }
@@ -770,9 +785,9 @@ int main(int argc, char **argv)
   }
 
   tipo = atoi(argv[2]);
-  if (tipo < 1 || tipo > 5)
+  if (tipo < 1 || tipo > 6)
   {
-    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria), 5 (heuristica gulosa melhorada)\n");
+    printf("Tipo invalido\nUse: tipo=1 (relaxacao linear), 2 (solucao inteira), 3 (heuristica gulosa), 4 (heuristica aleatoria), 5 (heuristica gulosa melhorada), 6 (heuristica aleatoria melhorada)\n");
     exit(1);
   }
 
