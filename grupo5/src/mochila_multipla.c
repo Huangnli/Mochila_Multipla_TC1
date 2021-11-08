@@ -31,10 +31,7 @@ s.a.:
    ...
    xn1 + xn2 + ... + xnk <= 1
 
-
-
 variaveis: xij binarias = 1 se o item i eh transportado na mochila j
-
 */
 
 #include <stdio.h>
@@ -510,12 +507,10 @@ double destroy_rins(Tinstance I, double z, double xx, double *x)
   {
     if (I.item[i].index != 0)
     {
-      // printf("x: %f item: %d xx:%f\n", x[(I.item[i].index - 1) * I.n + i], i + 1, xx);
       if (x[(I.item[i].index - 1) * I.n + i] < xx)
       {                                               // item vai ser tirado da mochila
         I.C[(I.item[i].index - 1)] += I.item[i].peso; // ajusta o peso preenchido na mochila
         z -= I.item[i].valor;                         // ajusta o valor da solução
-        // printf("mochila: %d item: %d\n", I.item[i].index, I.item[i].num);
         I.item[i].index = 0; // retira o item da mochila
       }
     }
@@ -537,7 +532,6 @@ double repair_rins(Tinstance I, double z, double *x)
         I.C[j] -= I.item[i].peso;
         z += I.item[i].valor;
         j = I.k;
-        // printf("oiii %lf\n", z2);
       }
       else
         j--;
@@ -566,14 +560,6 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
   z2 = guloso(I);
   qsort(I.item, I.n, sizeof(Titem), comparador_num);
 
-  // for (int i = 0; i < I.n; i++)
-  // {
-  //   if (I.item[i].index != 0)
-  //   {
-  //     printf("\nItens guloso: %d %f\n", I.item[i].num, I.item[i].valor);
-  //   }
-  // }
-
   z2 = destroy_rins(I, z2, 1.0, x);
 
   // destroi novamente
@@ -589,14 +575,6 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
     z2 = repair_rins(I, z2, x);
     z2 = destroy_rins(I, z2, 1.0, x);
   }
-
-  // for (int i = 0; i < I.n; i++)
-  // {
-  //   if (I.item[i].index != 0)
-  //   {
-  //     printf("\nItens n removidos: %d %f\n", I.item[i].num, I.item[i].valor);
-  //   }
-  // }
 
   j = 0;
   for (int i = 0; i < I.n; i++)
@@ -621,8 +599,6 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
   x2 = (double *)malloc(sizeof(double) * (I_PLI.n * I_PLI.k));
   otimiza_PLI(I_PLI, 2, x2, &info);
 
-  // printf("\nz1: %f\n", z1);
-
   for (int i = 0; i < I_PLI.n; i++)
   {
     for (int j = 0; j < I_PLI.k; j++)
@@ -630,26 +606,16 @@ double guloso_melhorada(Tinstance I, my_infoT *info)
       if (x2[j * I_PLI.n + i] == 1.0) // item levado
       {
         I.item[I_PLI.item[i].num - 1].index = (j + 1);
-        // printf("\nItens levados no PLI: %d %f Item do I: %d %f\n", I_PLI.item[i].num, I_PLI.item[i].valor, I.item[I_PLI.item[i].num - 1].num, I.item[I_PLI.item[i].num - 1].valor);
         break;
       }
     }
   }
-
-  // for (int i = 0; i < I_PLI.n * I_PLI.k; i++)
-  // {
-  //   if (x2[i] == 1.0) // item levado
-  //   {
-  //     printf("\ni: %d\n", i%I_PLI.n);
-  //   }
-  // }
 
   for (int i = 0; i < I.n; i++)
   {
     if (I.item[i].index != 0)
     {
       soma += I.item[i].valor;
-      // printf("\nItens levados no I: %d %f\n", I.item[i].num, I.item[i].valor);
     }
   }
 
