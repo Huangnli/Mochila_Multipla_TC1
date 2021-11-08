@@ -67,6 +67,18 @@ typedef struct
   int *C;      /* capacidade das mochilas */
 } Tinstance;
 
+// estrutura usada pela callback para salvar informações do B&B
+typedef struct
+{
+  glp_prob *mip;
+  int nodes;
+  int ativos;
+  double best_dualBound;
+  double best_primalBound;
+  double gap;
+} my_infoT;
+
+void my_callback(glp_tree *tree, void *infop);
 int carga_lp(glp_prob **lp, Tinstance I);
 int carga_instancia(char *filename, Tinstance *I);
 void free_instancia(Tinstance I);
@@ -75,11 +87,11 @@ int comparador(const void *valor1, const void *valor2);
 int comparador_num(const void *num1, const void *num2);
 double guloso(Tinstance I);
 double random_heuristica(Tinstance I);
-double guloso_melhorada(Tinstance I);
+double guloso_melhorada(Tinstance I, my_infoT *info);
 void troca(Titem *a, Titem *b);
-double heuristica(Tinstance I, int tipo);
-double otimiza_PLI(Tinstance I, int tipo, double *x);
-void gerar_arquivo_sol(char *filename, double z, Tinstance I);
+double heuristica(Tinstance I, int tipo, my_infoT *info);
+double otimiza_PLI(Tinstance I, int tipo, double *x, my_infoT *info);
+void gerar_arquivo_sol(char *filename, int tipo, double z, Tinstance I);
 void gerar_arquivo_out(char *filename, int tipo, double z, double tempo);
 double destroy_rins(Tinstance I, double z, double xx, double *x);
 double repair_rins(Tinstance I, double z, double *x);
@@ -253,14 +265,47 @@ int RandomInteger(int low, int high)
   return low + k;
 }
 
-/* resolve o problema de PLI usando o GLPK */
-double otimiza_PLI(Tinstance I, int tipo, double *x)
+// callback usada para salvar informações da execução do B&B
+void my_callback(glp_tree *tree, void *infop)
+{
+  int bestnode;
+  my_infoT *info;
+
+  info = (my_infoT *)infop;
+
+  switch (glp_ios_reason(tree))
+  {
+  case GLP_ISELECT:
+  case GLP_IBINGO:
+    glp_ios_tree_size(tree, &(info->ativos), &(info->nodes), NULL);
+    bestnode = glp_ios_best_node(tree);
+    info->best_dualBound = glp_ios_node_bound(tree, bestnode);
+    info->best_primalBound = glp_mip_obj_val(info->mip);
+    info->gap = glp_ios_mip_gap(tree);
+#ifdef DEBUG
+    if (info->best_dualBound < 1e10)
+      printf("%d\t%d\t%d\t%.2lf\t%.2lf\t%.2lf\n", info->ativos, info->nodes, bestnode, info->best_primalBound, info->best_dualBound, 100 * (info->gap));
+    else
+      printf("%d\t%d\t%d\t%.2lf\t*\t%.2lf\n", info->ativos, info->nodes, bestnode, info->best_primalBound, 100 * (info->gap));
+#endif
+    break;
+  default:
+    break;
+  }
+}
+
+// parameter info = guarda informações de execução do B&B
+double otimiza_PLI(Tinstance I, int tipo, double *x, my_infoT *info)
 {
   glp_prob *lp;
   double z, valor;
+  //  clock_t antes, agora;
   glp_smcp param_lp;
   glp_iocp param_ilp;
-  int status, i, k;
+  int i, k;
+#ifdef DEBUG
+  int status;
+#endif
 
   // desabilita saidas do GLPK no terminal
   glp_term_out(GLP_OFF);
@@ -275,9 +320,14 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
   // configura optimizer
   glp_init_iocp(&param_ilp);
   param_ilp.msg_lev = GLP_MSG_ALL;
-  param_ilp.tm_lim = 1000; // tempo limite do solver de PLI
+  param_ilp.tm_lim = 1000;
   param_ilp.out_frq = 100;
 
+  // ativa my callback
+  param_ilp.cb_func = my_callback;
+  param_ilp.cb_info = info;
+
+  info->mip = lp;
   // Executa Solver de PL
   glp_simplex(lp, &param_lp); // resolve o problema relaxado
   if (tipo == 2)
@@ -285,16 +335,20 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
     glp_intopt(lp, &param_ilp); // resolve o problema inteiro
   }
 
+#ifdef DEBUG
   if (tipo == 2)
   {
     status = glp_mip_status(lp);
     PRINTF("\nstatus=%d\n", status);
   }
+#endif
   // Recupera solucao
   if (tipo == 1)
     z = glp_get_obj_val(lp);
   else
+  {
     z = glp_mip_obj_val(lp);
+  }
 
   for (k = 0; k < I.k; k++)
   {
@@ -305,7 +359,7 @@ double otimiza_PLI(Tinstance I, int tipo, double *x)
       else
         valor = glp_mip_col_val(lp, k * I.n + i + 1); // recupera o valor da variavel xik
       if (valor > EPSILON)
-        PRINTF("x%d_%d = %.2lf\n", I.item[i].num, k + 1, valor);
+        PRINTF("x%d_%d = %.2lf\n", i + 1, k + 1, valor);
       x[k * I.n + i] = valor;
     }
   }
@@ -493,7 +547,7 @@ double repair_rins(Tinstance I, double z, double *x)
 }
 
 //Heuristica guloso melhorada
-double guloso_melhorada(Tinstance I)
+double guloso_melhorada(Tinstance I, my_infoT *info)
 {
   // double z1 = 0.0; // Melhor resposta do relaxado
   double z2 = 0.0; // Melhor resposta do guloso
@@ -508,7 +562,7 @@ double guloso_melhorada(Tinstance I)
   (I_PLI).item = (Titem *)malloc(sizeof(Titem) * ((I).n));
 
   x = (double *)malloc(sizeof(double) * (I.n * I.k));
-  otimiza_PLI(I, tipo, x);
+  otimiza_PLI(I, tipo, x, &info);
   z2 = guloso(I);
   qsort(I.item, I.n, sizeof(Titem), comparador_num);
 
@@ -565,7 +619,7 @@ double guloso_melhorada(Tinstance I)
   }
 
   x2 = (double *)malloc(sizeof(double) * (I_PLI.n * I_PLI.k));
-  otimiza_PLI(I_PLI, 2, x2);
+  otimiza_PLI(I_PLI, 2, x2, &info);
 
   // printf("\nz1: %f\n", z1);
 
@@ -607,7 +661,7 @@ double guloso_melhorada(Tinstance I)
 }
 
 /* heuristica a ser implementada */
-double heuristica(Tinstance I, int tipo)
+double heuristica(Tinstance I, int tipo, my_infoT *info)
 {
   double z = 0.0;
 
@@ -621,20 +675,22 @@ double heuristica(Tinstance I, int tipo)
   }
   else
   {
-    z = guloso_melhorada(I);
+    z = guloso_melhorada(I, &info);
   }
 
   return z;
 }
 
-void gerar_arquivo_sol(char *filename, double z, Tinstance I)
+void gerar_arquivo_sol(char *filename, int tipo, double z, Tinstance I)
 {
   FILE *arquivo_saida;
   char nomeArquivo[64];
   int soma;
+  char str[32];
 
+  sprintf(str, "-%d.sol", tipo);
   strcpy(nomeArquivo, filename);
-  strcat(nomeArquivo, ".sol");
+  strcat(nomeArquivo, str);
 
   arquivo_saida = fopen(nomeArquivo, "w");
 
@@ -676,6 +732,7 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
 
   const char *heuristica1 = "-1";
   const char *heuristica2 = "-2";
+  const char *heuristica3 = "-3";
 
   strcpy(nomeArquivo, filename);
 
@@ -698,12 +755,12 @@ void gerar_arquivo_out(char *filename, int tipo, double z, double tempo)
     }
     else if (tipo == 4)
     {
-      strcat(nomeArquivo, heuristica1);
+      strcat(nomeArquivo, heuristica2);
       gerador = "4:heuristica aleatória";
     }
     else
     {
-      strcat(nomeArquivo, heuristica2);
+      strcat(nomeArquivo, heuristica3);
       gerador = "5:gulosa melhorada";
     }
     status = 10;
@@ -730,6 +787,7 @@ int main(int argc, char **argv)
   clock_t antes, agora;
   int tipo;
   Tinstance I;
+  my_infoT info;
 
   // checa linha de comando
   if (argc < 3)
@@ -752,30 +810,37 @@ int main(int argc, char **argv)
     exit(1);
   }
 
+  // inicializa info
+  info.best_dualBound = 0;
+  info.best_primalBound = 0;
+  info.gap = 0;
+  info.nodes = 0;
+  info.ativos = 0;
+
   antes = clock();
   if (tipo < 3)
   {
     // aloca memoria para a solucao
     x = (double *)malloc(sizeof(double) * (I.n * I.k));
-    z = otimiza_PLI(I, tipo, x);
+    z = otimiza_PLI(I, tipo, x, &info);
     free(x);
   }
   else
   {
     // heuristica
-    z = heuristica(I, tipo);
+    z = heuristica(I, tipo, &info);
   }
   agora = clock();
 
   PRINTF("Valor da solucao: %lf\tTempo gasto=%lf\n", z, ((double)agora - antes) / CLOCKS_PER_SEC);
 
-  printf("%s;%d;%d;%d;%.0lf;%lf\n", argv[1], tipo, I.n, I.k, z, ((double)agora - antes) / CLOCKS_PER_SEC);
+  printf("%s;%d;%d;%d;%.0lf;%lf;%lf,%.3lf;%d;%d;%lf\n", argv[1], tipo, I.n, I.k, z, info.best_dualBound, info.best_primalBound, 100 * info.gap, info.nodes, info.ativos, ((double)agora - antes) / CLOCKS_PER_SEC);
 
   tempo = ((double)agora - antes) / CLOCKS_PER_SEC;
 
   if (tipo > 2)
   {
-    gerar_arquivo_sol(argv[1], z, I);
+    gerar_arquivo_sol(argv[1], tipo, z, I);
     gerar_arquivo_out(argv[1], tipo, z, tempo);
   }
 
