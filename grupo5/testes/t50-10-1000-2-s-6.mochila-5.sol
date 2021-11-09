@@ -1,21 +1,21 @@
-12827 10
+12920 10
 mochila 1 2
 8 25 
-mochila 2 2
-12 48 
+mochila 2 3
+13 43 48 
 mochila 3 2
-13 28 
-mochila 4 5
-18 26 38 43 49 
+3 46 
+mochila 4 3
+7 26 32 
 mochila 5 4
-5 6 15 37 
+18 21 31 37 
 mochila 6 2
-22 31 
+12 39 
 mochila 7 3
-3 7 16 
-mochila 8 2
-32 39 
+16 22 34 
+mochila 8 3
+5 6 27 
 mochila 9 3
-2 30 42 
+15 40 42 
 mochila 10 4
-4 21 36 40 
+2 4 36 49 

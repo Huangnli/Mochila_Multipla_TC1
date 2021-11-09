@@ -1,11 +1,11 @@
-8517 5
-mochila 1 2
-17 23 
+8599 5
+mochila 1 3
+7 17 24 
 mochila 2 2
 3 22 
-mochila 3 3
-8 9 15 
+mochila 3 2
+8 23 
 mochila 4 3
-11 13 24 
-mochila 5 3
-4 10 14 
+1 11 14 
+mochila 5 4
+9 10 13 15 
